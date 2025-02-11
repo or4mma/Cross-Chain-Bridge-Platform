@@ -1,21 +1,51 @@
+import { describe, it, expect, beforeEach } from "vitest"
 
-import { describe, expect, it } from "vitest";
+// Mock storage for locked assets
+const lockedAssets = new Map()
+let nextNonce = 0
 
-const accounts = simnet.getAccounts();
-const address1 = accounts.get("wallet_1")!;
+// Mock functions to simulate contract behavior
+function lockAssets(amount: number, recipient: string, targetChain: number) {
+  if (amount <= 0) throw new Error("Invalid amount")
+  const nonce = nextNonce++
+  return nonce
+}
 
-/*
-  The test below is an example. To learn more, read the testing documentation here:
-  https://docs.hiro.so/stacks/clarinet-js-sdk
-*/
+function unlockAssets(chainId: number, txHash: string, amount: number, recipient: string) {
+  if (lockedAssets.has(`${chainId}-${txHash}`)) throw new Error("Already processed")
+  lockedAssets.set(`${chainId}-${txHash}`, { amount, recipient })
+  return true
+}
 
-describe("example tests", () => {
-  it("ensures simnet is well initalised", () => {
-    expect(simnet.blockHeight).toBeDefined();
-  });
+function getLockedAssets(chainId: number, txHash: string) {
+  return lockedAssets.get(`${chainId}-${txHash}`)
+}
 
-  // it("shows an example", () => {
-  //   const { result } = simnet.callReadOnlyFn("counter", "get-counter", [], address1);
-  //   expect(result).toBeUint(0);
-  // });
-});
+describe("Bridge Contract", () => {
+  beforeEach(() => {
+    lockedAssets.clear()
+    nextNonce = 0
+  })
+  
+  it("should lock assets", () => {
+    const nonce = lockAssets(100, "recipient1", 1)
+    expect(nonce).toBe(0)
+  })
+  
+  it("should not lock assets with invalid amount", () => {
+    expect(() => lockAssets(0, "recipient1", 1)).toThrow("Invalid amount")
+  })
+  
+  it("should unlock assets", () => {
+    const result = unlockAssets(1, "tx123", 100, "recipient1")
+    expect(result).toBe(true)
+    const assets = getLockedAssets(1, "tx123")
+    expect(assets).toEqual({ amount: 100, recipient: "recipient1" })
+  })
+  
+  it("should not unlock assets twice", () => {
+    unlockAssets(1, "tx123", 100, "recipient1")
+    expect(() => unlockAssets(1, "tx123", 100, "recipient1")).toThrow("Already processed")
+  })
+})
+

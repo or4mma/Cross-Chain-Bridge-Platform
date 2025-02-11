@@ -11,3 +11,5 @@ H
 tests/governance.test.ts,c/e/ce14344de9ea9b63c3c2c3228c80d12874bc7dff
 E
 contracts/bridge.clar,1/a/1ada747213d4a55a7653157834a36fd5baa79f08
+D
+tests/bridge.test.ts,8/2/8219e78cf38573a812f4d58f05c85846d08cd618
